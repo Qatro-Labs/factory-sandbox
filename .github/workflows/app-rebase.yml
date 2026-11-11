@@ -30,3 +30,9 @@ jobs:
           git checkout factory/t-1 -- agent.txt 2>/dev/null || echo "cambio del agente" > agent.txt
           git add agent.txt && git -c user.name=factory -c user.email=factory@example.invalid commit -qm "factory: t-1 sobre main"
           if git push -f origin HEAD:factory/t-1-b 2>&1; then echo "RESULTADO: rama nueva aceptada"; else echo "RESULTADO: rama nueva rechazada"; fi
+      - name: La App intenta cambiar un workflow (debe fallar)
+        run: |
+          git checkout -q -B factory/t-1-c origin/main
+          echo "# cambio del agente" >> .github/workflows/agent-perms.yml
+          git add . && git -c user.name=factory -c user.email=factory@example.invalid commit -qm "factory: toca un workflow"
+          if git push -f origin HEAD:factory/t-1-c 2>&1; then echo "RESULTADO: cambio de workflow aceptado (MAL)"; else echo "RESULTADO: cambio de workflow rechazado (BIEN)"; fi
