@@ -1,0 +1,41 @@
+name: agent-perms
+# Plan 0, tarea 3: el job del agente no puede hacer push ni merge.
+on: workflow_dispatch
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Qué credenciales quedan en el runner (solo nombres)
+        run: |
+          env | cut -d= -f1 | sort | grep -iE 'token|secret|key|auth|actions_' || true
+          echo "--- .git/config"; cat .git/config
+          echo "--- extraheader"; git config --get-all http.https://github.com/.extraheader || echo "sin extraheader"
+      - name: Push sin credenciales
+        run: |
+          git -c user.name=agent -c user.email=agent@example.invalid commit --allow-empty -m "agent push"
+          git push origin HEAD:refs/heads/spike-agent 2>&1 && echo "RESULTADO: push OK (MAL)" || echo "RESULTADO: push rechazado (BIEN)"
+      - name: Merge sin token
+        run: gh pr merge spike-pr --merge --repo "$GITHUB_REPOSITORY" 2>&1 && echo "RESULTADO: merge OK (MAL)" || echo "RESULTADO: merge rechazado (BIEN)"
+      - name: Aunque se filtrara el GITHUB_TOKEN de este job (contents read)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/spike-agent 2>&1 | sed 's/x-access-token:[^@]*@/x-access-token:***@/' ; echo "exit ${PIPESTATUS[0]}"
+          gh pr merge spike-pr --merge --repo "$GITHUB_REPOSITORY" 2>&1 && echo "RESULTADO: merge con token read OK (MAL)" || echo "RESULTADO: merge con token read rechazado (BIEN)"
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push con permiso (control)
+        run: |
+          git -c user.name=control -c user.email=control@example.invalid commit --allow-empty -m "control push"
+          git push origin HEAD:refs/heads/spike-control 2>&1 && echo "RESULTADO: push de control OK (BIEN)"
