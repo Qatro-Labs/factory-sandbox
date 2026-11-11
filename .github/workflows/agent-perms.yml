@@ -21,7 +21,8 @@ jobs:
           git -c user.name=agent -c user.email=agent@example.invalid commit --allow-empty -m "agent push"
           git push origin HEAD:refs/heads/spike-agent 2>&1 && echo "RESULTADO: push OK (MAL)" || echo "RESULTADO: push rechazado (BIEN)"
       - name: Merge sin token
-        run: gh pr merge spike-pr --merge --repo "$GITHUB_REPOSITORY" 2>&1 && echo "RESULTADO: merge OK (MAL)" || echo "RESULTADO: merge rechazado (BIEN)"
+        run: |
+          gh pr merge spike-pr --merge --repo "$GITHUB_REPOSITORY" 2>&1 && echo "RESULTADO: merge OK (MAL)" || echo "RESULTADO: merge rechazado (BIEN)"
       - name: Aunque se filtrara el GITHUB_TOKEN de este job (contents read)
         env:
           GH_TOKEN: ${{ github.token }}
