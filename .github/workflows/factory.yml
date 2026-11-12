@@ -1,0 +1,26 @@
+# Stub of the factory workflow, to test that /qatro-kit:triage starts it with the right inputs.
+# It only prints the inputs and who started it. Plan 3, task 10.
+name: factory
+on:
+  workflow_dispatch:
+    inputs:
+      project: { description: Project name in the factory list, required: true }
+      ticket: { description: HQ ticket id, for a relaunch, required: false }
+      title: { description: One line, for a new ticket, required: false }
+      criteria: { description: One criterion per line, required: false }
+      size: { description: small, normal or complex, required: false }
+      risk: { description: One sentence, required: false }
+      mode: { description: implement or plan, required: true, default: implement }
+permissions: {}
+jobs:
+  inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Print inputs
+        env:
+          INPUTS: ${{ toJSON(inputs) }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          echo "actor: $ACTOR"
+          echo "$INPUTS"
