@@ -1,0 +1,24 @@
+name: sandbox-check
+# Plan 0, revisión: ¿el sandbox de Claude Code (bubblewrap) funciona en ubuntu-latest?
+# Sin secretos: solo prueba bubblewrap y el sandbox de Claude Code sin llamar a la API.
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  bwrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Imagen y AppArmor
+        run: |
+          . /etc/os-release; echo "imagen: $PRETTY_NAME $(uname -m)"
+          sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo "sin esa clave"
+      - name: Instalar bubblewrap y socat
+        run: sudo apt-get install -y -qq bubblewrap socat >/dev/null && bwrap --version
+      - name: bubblewrap sin tocar AppArmor
+        run: |
+          if bwrap --ro-bind / / --dev /dev --proc /proc --unshare-user --unshare-net true 2>err.txt; then echo "RESULTADO: bwrap funciona sin cambios"; else echo "RESULTADO: bwrap falla sin cambios: $(head -1 err.txt)"; fi
+      - name: bubblewrap con el ajuste documentado de AppArmor
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 >/dev/null 2>&1 || true
+          if bwrap --ro-bind / / --dev /dev --proc /proc --unshare-user --unshare-net curl -s -m 5 -o /dev/null https://example.com 2>err.txt; then echo "RESULTADO: bwrap con red (MAL)"; else echo "RESULTADO: bwrap funciona y sin red no sale (BIEN): $(head -1 err.txt)"; fi
